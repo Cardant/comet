@@ -437,7 +437,7 @@ async def stream(
         kodi_meta = _build_kodi_meta(rtn_data, formatted_components) if kodi else None
         info_hash_cache_status = service_cache_status.get(info_hash)
         quoted_torrent_title = quote(torrent_title)
-        folder_hints = _build_folder_hints(torrent)
+        folder_hints = _build_folder_hints(torrent) if media_type == "series" else {}
 
         for entry_index, service, debrid_extension in debrid_stream_specs:
             if service in debrid_errors:

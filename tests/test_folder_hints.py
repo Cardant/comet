@@ -131,6 +131,27 @@ class CachedPackNameTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("torrentTitle", torrent)
         self.assertEqual(_build_folder_hints(torrent), {})
 
+    async def test_file_row_without_extension_is_not_taken_for_a_pack(self):
+        manager = self._manager()
+        info_hash = "f" * 40
+        file_row = {
+            **self._episode_row(info_hash),
+            "file_index": 3,
+            "title": "Show.S01E01-E02.1080p-GRP",
+            "size": 800,
+            "episode": None,
+            "parsed_json": (
+                '{"raw_title":"Show.S01E01-E02.1080p-GRP",'
+                '"seasons":[1],"episodes":[1,2]}'
+            ),
+        }
+        rows = [file_row, self._episode_row(info_hash)]
+
+        with patch.object(manager, "_fetch_cached_rows", return_value=rows):
+            await manager.get_cached_torrents()
+
+        self.assertNotIn("torrentTitle", manager.torrents[info_hash])
+
     async def test_anime_batch_row_is_taken_for_a_pack(self):
         manager = self._manager()
         info_hash = "c" * 40
@@ -200,3 +221,26 @@ class TorznabPackTest(unittest.TestCase):
         torrent = self._torrent(title="Show.S01E01.1080p-GRP.mkv", size=100)
 
         self.assertEqual(self._feed(torrent), ("Show.S01E01.1080p-GRP.mkv", 100))
+
+    def test_movie_is_listed_as_its_file(self):
+        torrent = self._torrent(
+            title="Movie.2024.Part.1.1080p-GRP.mkv",
+            size=100,
+            torrentTitle="Movie.Collection.1080p-GRP",
+            torrentSize=300,
+        )
+        info_hash = "e" * 40
+        result = MediaSearchResult(
+            MediaSearchStatus.OK,
+            metadata={"title": "Movie", "year": 2024},
+            torrents={info_hash: torrent},
+            ranked_info_hashes=[info_hash],
+            media_only_id="tt1234567",
+        )
+        content, _ = serialize_feed(result, "movie", "https://example.test/torznab/api")
+        item = ET.fromstring(content).find("channel/item")
+
+        self.assertEqual(
+            (item.findtext("title"), int(item.findtext("size"))),
+            ("Movie.2024.Part.1.1080p-GRP.mkv", 100),
+        )

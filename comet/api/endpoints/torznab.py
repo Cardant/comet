@@ -495,7 +495,7 @@ def _serialize_items(
         if not isinstance(torrent, dict):
             continue
         # A file matched inside a pack is reported as the pack it downloads.
-        pack = get_pack_info(torrent)
+        pack = get_pack_info(torrent) if media_type == "series" else None
         raw_title = pack[0] if pack else torrent.get("title")
         if not isinstance(raw_title, str):
             continue

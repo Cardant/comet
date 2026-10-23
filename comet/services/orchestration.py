@@ -209,11 +209,16 @@ class TorrentManager:
             rows.extend(cache_rows)
 
         # Whole-torrent rows keep the pack name and size, which the per-file row
-        # picked below for an episode request no longer carries. Rows without an
-        # episode also hold multi-episode video files, which are skipped.
+        # picked below for an episode request no longer carries. Rows of a single
+        # file (a file index, or a video file name) are skipped.
         pack_rows = {}
         for row in rows:
-            if row["episode"] is not None or not row["title"] or is_video(row["title"]):
+            if (
+                row["episode"] is not None
+                or row["file_index"] is not None
+                or not row["title"]
+                or is_video(row["title"])
+            ):
                 continue
             parsed_pack = load_cached_parsed(row["parsed_json"])
             if parsed_pack is None or not (parsed_pack.seasons or parsed_pack.episodes):
